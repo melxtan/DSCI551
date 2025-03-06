@@ -2,5 +2,6 @@ streamlit
 pandas
 sqlparse
 pymysql
+cryptography
 pymongo
 openai
