@@ -23,7 +23,7 @@ client = AzureOpenAI(
 # 连接 SQL 数据库
 def connect_sql():
     return pymysql.connect(
-        host='3.133.114.102',
+        host='3.142.136.71',
         user='root',
         password='Dsci-551',
         db='world',
