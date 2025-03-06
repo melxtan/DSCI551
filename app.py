@@ -3,7 +3,7 @@ import pandas as pd
 from utils import generate_query, execute_sql, execute_mongo, get_nosql_schema, validate_sql
 
 def main():
-    st.title("Natural Language to SQL/NoSQL Query")
+    st.title("Natural Language to Database Query")
 
     # Select the type of database
     db_choice = st.radio("Select Database Type", ("SQL", "NoSQL"))
