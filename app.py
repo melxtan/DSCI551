@@ -30,8 +30,10 @@ def main():
         db_type_code = "mongodb"
 
     # Display friendly schema summary
-    st.write("### Database Schema Summary")
-    st.markdown(summarize_schema(schema, db_type_code))
+    with st.expander("View Database Schema"):
+        for table, columns in schema.items():
+                st.subheader(table)
+                st.markdown(", ".join(f"`{col}`" for col in columns))
 
     # Optionally show raw JSON
     with st.expander("Show raw schema (advanced users)"):
