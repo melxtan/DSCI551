@@ -7,6 +7,7 @@ import sqlparse
 import pymysql
 import pymongo
 import psycopg2
+from pymongo import MongoClient
 from psycopg2.extras import RealDictCursor
 from openai import AzureOpenAI
 
