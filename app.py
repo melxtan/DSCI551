@@ -37,13 +37,6 @@ def main():
     with st.expander("Show raw schema (advanced users)"):
         st.json(schema)
 
-    # Generate example questions
-    if st.button("Show Example Questions"):
-        st.write("### Example Natural Language Questions")
-        examples = generate_example_questions(schema, db_type=db_type_code)
-        for i, ex in enumerate(examples, 1):
-            st.markdown(f"{i}. {ex}")
-
     # Get user query
     user_query = st.text_area("Enter your question in natural language")
 
