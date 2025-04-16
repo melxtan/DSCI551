@@ -151,18 +151,24 @@ def generate_query(user_query, db_type):
     """
     使用 LLM 解析自然语言，并结合数据库 Schema 生成 SQL/NoSQL 查询
     """
-    schema = get_sql_schema() if db_type == "sql" else get_nosql_schema()
+    if db_type == "sql":
+        schema = get_sql_schema()
+        db_type_desc = "MySQL"
+    else:
+        schema = get_nosql_schema()
+        db_type_desc = "MongoDB"
 
     system_prompt = f"""
-    你是一个数据库查询助手，任务是将自然语言转换为数据库查询。
-    当前数据库结构如下：
-    {schema}
-    请根据用户的查询生成正确的 {db_type.upper()} 语句。
+你是一个数据库查询助手，任务是将自然语言转换为数据库查询语句。
+当前数据库类型是 {db_type_desc}，结构如下：
+{schema}
+
+请根据用户的查询生成符合语法的 {db_type_desc} 查询语句。
     """
 
     messages = [
-        {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
-        {"role": "user", "content": [{"type": "text", "text": user_query}]}
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_query}
     ]
 
     completion = client.chat.completions.create(
