@@ -64,7 +64,42 @@ def get_nosql_schema():
             schema[collection] = list(document.keys())
     return schema
 
+def generate_example_questions(schema: dict, db_type: str = "sql", num_examples: int = 5) -> list[str]:
+    """
+    Generate natural language example questions from a given database schema using Azure OpenAI.
+    """
+    table_descriptions = []
+    for table, columns in schema.items():
+        cols = ", ".join(columns)
+        table_descriptions.append(f"- {table} ({cols})")
 
+    schema_description = "\n".join(table_descriptions)
+
+    system_prompt = f"""
+You are a helpful assistant that helps users write natural language questions for querying a {db_type.upper()} database.
+
+Here is the schema of the database:
+{schema_description}
+
+Generate {num_examples} realistic and useful example questions that a non-technical user might ask about this data.
+Only output the questions as a numbered list.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=[
+                {"role": "system", "content": system_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=300,
+        )
+        content = response.choices[0].message.content
+        questions = [line.split('. ', 1)[-1].strip() for line in content.split('\n') if line.strip()]
+        return questions
+    except Exception as e:
+        print(f"Error generating example questions: {e}")
+        return ["Example question generation failed."]
 # %%
 
 def generate_query(user_query, db_type="sql"):
