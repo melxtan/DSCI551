@@ -230,36 +230,35 @@ def extract_sql_from_response(llm_response: str) -> str:
 import sqlparse
 
 def validate_sql(sql_query: str) -> bool:
-    """验证 SQL 语句的基本合法性"""
+    """Validates the basic structure of an SQL statement."""
     try:
         statements = sqlparse.parse(sql_query)
         return bool(statements and len(statements) > 0)
     except Exception:
         return False
 
+
 def execute_sql(sql_query: str):
-    """Execute SQL query and return result in a DataFrame."""
-
-    # Ensure query is cleaned
-    sql_query = extract_sql_from_response(sql_query)
-
+    """Executes an SQL query with validation."""
     if not validate_sql(sql_query):
-        return "SQL query is invalid and cannot be executed."
+        return "SQL statement is invalid and cannot be executed."
 
-    connection = connect_sql()
+    connection = connect_to_rdbms()
     try:
         with connection.cursor() as cursor:
             affected_rows = cursor.execute(sql_query)
             query_lower = sql_query.strip().lower()
             if query_lower.startswith(("select", "show", "describe")):
-                result = cursor.fetchall()
-                if result:
-                    # Fetch column names dynamically
-                    column_names = [desc[0] for desc in cursor.description]
-                    df = pd.DataFrame(result, columns=column_names)
-                    return df
-                else:
-                    return "No results returned."
+                # Get column names
+                columns = [desc[0] for desc in cursor.description]
+                # Fetch results and convert to list of dictionaries
+                results = []
+                for row in cursor.fetchall():
+                    result_dict = {}
+                    for i, value in enumerate(row):
+                        result_dict[columns[i]] = value
+                    results.append(result_dict)
+                return results
             else:
                 connection.commit()
                 return f"{affected_rows} rows affected."
