@@ -301,6 +301,18 @@ def execute_postgres(query: str):
     finally:
         connection.close()
 
+def clean_mongodb_data(data):
+    """Clean MongoDB data by converting special types to strings."""
+    if isinstance(data, dict):
+        return {k: clean_mongodb_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_mongodb_data(item) for item in data]
+    elif isinstance(data, ObjectId):
+        return str(data)
+    elif isinstance(data, (pd.Timestamp, pd.DatetimeTZDtype)):
+        return str(data)
+    return data
+
 
 def execute_nosql(nosql_query: str):
     """
