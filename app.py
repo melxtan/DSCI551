@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils import (connect_to_postgres, execute_nosql, execute_postgres, execute_sql, validate_sql, extract_sql_from_response, generate_query, get_nosql_schema, get_postgres_schema, get_sql_schema, clean_mongodb_data)
+from utils import (connect_to_postgres, execute_nosql, execute_postgres, execute_sql, validate_sql, extract_sql_from_response, generate_query, get_nosql_schema, get_postgres_schema, get_sql_schema, generate_example_questions, clean_mongodb_data)
 
 def summarize_schema(schema: dict, db_type: str) -> str:
     """Generates a friendly summary of the schema for non-technical users."""
