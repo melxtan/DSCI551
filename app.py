@@ -2,44 +2,57 @@ import streamlit as st
 import pandas as pd
 from utils import (connect_to_postgres, execute_nosql, execute_postgres, execute_sql, validate_sql, extract_sql_from_response, generate_query, get_nosql_schema, get_postgres_schema, get_sql_schema, clean_mongodb_data)
 
+def summarize_schema(schema: dict, db_type: str) -> str:
+    """Generates a friendly summary of the schema for non-technical users."""
+    summary = []
+    for table, columns in schema.items():
+        column_list = ", ".join(columns)
+        entity_name = "collection" if db_type == "mongodb" else "table"
+        description = f"**{table}** {entity_name} with fields: {column_list}"
+        summary.append(description)
+    return "\n\n".join(summary)
+
 def main():
     st.title("Natural Language to SQL/NoSQL Query")
 
-    # Select the type of database
+    # Select DB type
     db_choice = st.radio("Select Database Type", ("MySQL", "PostgreSQL", "MongoDB"))
 
-    # Display database schema
-    st.write("### Database Schema")
+    # Fetch schema
     if db_choice == "MySQL":
         schema = get_sql_schema()
-        st.json(schema)
+        db_type_code = "mysql"
     elif db_choice == "PostgreSQL":
         schema = get_postgres_schema()
-        st.json(schema)
+        db_type_code = "postgres"
     else:
         schema = get_nosql_schema()
+        db_type_code = "mongodb"
+
+    # Display friendly schema summary
+    st.write("### Database Schema Summary")
+    st.markdown(summarize_schema(schema, db_type_code))
+
+    # Optionally show raw JSON
+    with st.expander("Show raw schema (advanced users)"):
         st.json(schema)
 
-    # Input the natural language query
-    user_query = st.text_area("Enter your query in natural language")
+    # Generate example questions
+    if st.button("Show Example Questions"):
+        st.write("### Example Natural Language Questions")
+        examples = generate_example_questions(schema, db_type=db_type_code)
+        for i, ex in enumerate(examples, 1):
+            st.markdown(f"{i}. {ex}")
 
-    # Initialize session state for storing the generated query
+    # Get user query
+    user_query = st.text_area("Enter your question in natural language")
+
     if "generated_query" not in st.session_state:
         st.session_state.generated_query = None
 
-    # Generate Query Button
     if st.button("Generate Query"):
         if user_query:
-            # Convert database choice to the expected format
-            db_type_map = {
-                "MySQL": "mysql",
-                "PostgreSQL": "postgres",
-                "MongoDB": "mongodb"
-            }
-            db_type = db_type_map[db_choice]
-            
-            # Generate and store query
-            query_type, generated_query = generate_query(user_query, db_type)
+            _, generated_query = generate_query(user_query, db_type_code)
             st.session_state.generated_query = generated_query
 
     # Display the generated query **only if it exists**
