@@ -302,7 +302,7 @@ def parse_mongo_query_string(query_str: str):
     return collection_name, filter_dict, projection_dict
 
 
-def execute_nosql(nosql_query: str):
+def execute_mongo(nosql_query: str):
     """
     Safely execute a MongoDB query string returned from the LLM.
     Converts result to DataFrame like SQL for consistent display.
