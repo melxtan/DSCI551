@@ -37,7 +37,7 @@ def connect_mongo():
 
 def get_sql_schema():
     """Retrieves MySQL database schema."""
-    connection = connect_to_rdbms()
+    connection = connect_sql()
     schema = {}
     try:
         with connection.cursor() as cursor:
@@ -54,7 +54,7 @@ def get_sql_schema():
 
 def get_postgres_schema():
     """Retrieves PostgreSQL database schema."""
-    connection = connect_to_postgres()
+    connection = connect_mongo()
     schema = {}
     try:
         with connection.cursor() as cursor:
