@@ -10,6 +10,7 @@ import psycopg2
 from pymongo import MongoClient
 from psycopg2.extras import RealDictCursor
 from openai import AzureOpenAI
+from bson import ObjectId
 
 # 从环境变量中获取配置参数（也可以在 constant.py 中统一管理）
 endpoint = os.getenv("ENDPOINT_URL", "https://gerhut.openai.azure.com/")
@@ -327,7 +328,7 @@ def execute_nosql(nosql_query: str):
     db = connect_to_nosql()  # Already returns the database object
     try:
         # 在安全上下文中执行查询，提供 db 变量供表达式使用
-        result = eval(nosql_query, {"db": db})
+        result = eval(nosql_query, {"db": db, "ObjectId": ObjectId})
         # 如果返回的是 pymongo Cursor，则转换为列表
         if hasattr(result, "sort") or hasattr(result, "batch_size"):
             result = list(result)
