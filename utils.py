@@ -56,7 +56,7 @@ def connect_to_nosql():
 def connect_to_postgres():
     """Establishes a connection to PostgreSQL database."""
     return psycopg2.connect(
-        host="localhost",
+        host="3.129.21.202",
         database="dvdrental",
         user="postgres",
         password="postgres",
