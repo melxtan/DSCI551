@@ -2,6 +2,7 @@ streamlit
 pandas
 sqlparse
 pymysql
-cryptography
 pymongo
 openai
+psycopg2-binary
+cryptography
