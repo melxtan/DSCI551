@@ -23,7 +23,7 @@ client = AzureOpenAI(
 def call_llm_api(messages: list) -> str:
     """Calls LLM API with the given messages."""
     response = client.chat.completions.create(
-        model=config["DEPLOYMENT_NAME"],
+        model="gpt-4o",
         messages=messages
     )
     return response.choices[0].message.content
