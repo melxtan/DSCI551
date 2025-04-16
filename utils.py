@@ -220,9 +220,13 @@ def validate_sql(sql_query: str) -> bool:
 
 
 def execute_sql(sql_query: str):
-    """Executes an SQL query with validation."""
+    """Execute SQL query and return result in a DataFrame."""
+
+    # Ensure query is cleaned
+    sql_query = extract_sql_from_response(sql_query)
+
     if not validate_sql(sql_query):
-        return "SQL statement is invalid and cannot be executed."
+        return "SQL query is invalid and cannot be executed."
 
     connection = connect_sql()
     try:
@@ -230,16 +234,14 @@ def execute_sql(sql_query: str):
             affected_rows = cursor.execute(sql_query)
             query_lower = sql_query.strip().lower()
             if query_lower.startswith(("select", "show", "describe")):
-                # Get column names
-                columns = [desc[0] for desc in cursor.description]
-                # Fetch results and convert to list of dictionaries
-                results = []
-                for row in cursor.fetchall():
-                    result_dict = {}
-                    for i, value in enumerate(row):
-                        result_dict[columns[i]] = value
-                    results.append(result_dict)
-                return results
+                result = cursor.fetchall()
+                if result:
+                    # Fetch column names dynamically
+                    column_names = [desc[0] for desc in cursor.description]
+                    df = pd.DataFrame(result, columns=column_names)
+                    return df
+                else:
+                    return "No results returned."
             else:
                 connection.commit()
                 return f"{affected_rows} rows affected."
