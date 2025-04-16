@@ -23,13 +23,13 @@ def main():
 
     # Example natural language questions for user inspiration
     with st.expander("Example Questions You Can Ask"):
-        st.markdown("""
-        - What is the population of Tokyo?
-        - List all official languages spoken in France.
-        - Which countries in Europe have a population over 50 million?
-        - Show all cities in Japan with more than 1 million people.
-        - What is the capital of Brazil?
-        """)
+        try:
+            example_questions = generate_example_questions(schema, db_type)
+            for q in example_questions:
+                st.markdown(f"- {q}")
+        except Exception as e:
+            st.warning("Could not generate example questions.")
+            st.code(str(e))
 
     user_query = st.text_area("Enter your query in natural language")
 
