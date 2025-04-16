@@ -281,28 +281,50 @@ def execute_postgres(query: str):
         connection.close()
 
 
+import re
+import ast
+
+def parse_mongo_query_string(query_str: str):
+    """
+    Parses a MongoDB query like:
+    db.city.find({ "Name": "Paris" }, { "Population": 1 })
+    Returns: collection_name, filter_dict, projection_dict
+    """
+    pattern = r"db\.([a-zA-Z0-9_]+)\.find\((\{.*?\})\s*,\s*(\{.*?\})\)"
+    match = re.search(pattern, query_str, re.DOTALL)
+    if not match:
+        raise ValueError("Invalid MongoDB query format")
+
+    collection_name = match.group(1)
+    filter_dict = ast.literal_eval(match.group(2))
+    projection_dict = ast.literal_eval(match.group(3))
+
+    return collection_name, filter_dict, projection_dict
+
+
 def execute_nosql(nosql_query: str):
     """
-    执行 MongoDB 查询。
-    参数 nosql_query 预期为一个可以在 MongoDB 上执行的 Python 表达式字符串，
-    例如："db['students'].find({'name': 'Alice'})"。
-
-    注意：这里使用 eval 执行查询，请确保查询内容受信任。
+    Safely execute a MongoDB query string returned from the LLM.
+    Converts result to DataFrame like SQL for consistent display.
     """
-    print("Executing MongoDB query:", nosql_query)
-    db = connect_to_nosql()  # Already returns the database object
+    db = connect_to_nosql()  # already gives you `db` object
+
     try:
-        # 在安全上下文中执行查询，提供 db 变量供表达式使用
-        result = eval(nosql_query, {"db": db})
-        # 如果返回的是 pymongo Cursor，则转换为列表
-        if hasattr(result, "sort") or hasattr(result, "batch_size"):
-            result = list(result)
-        print("MongoDB query result:", result)
-        return result
+        # Clean and extract actual MongoDB query string (if wrapped in code block)
+        nosql_query = extract_query_from_response(nosql_query)  # like extract_sql_from_response
+
+        # Parse query into components
+        collection, filter_dict, projection_dict = parse_mongo_query_string(nosql_query)
+
+        cursor = db[collection].find(filter_dict, projection_dict)
+        result = list(cursor)
+
+        if not result:
+            return "No results returned."
+        return pd.DataFrame(result)
+
     except Exception as e:
-        error_msg = f"Error executing MongoDB query: {str(e)}"
-        print(error_msg)
-        return error_msg
+        return f"MongoDB 查询错误: {str(e)}"
 
 
 
