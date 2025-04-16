@@ -224,7 +224,7 @@ def execute_sql(sql_query: str):
     if not validate_sql(sql_query):
         return "SQL statement is invalid and cannot be executed."
 
-    connection = connect_to_rdbms()
+    connection = connect_sql()
     try:
         with connection.cursor() as cursor:
             affected_rows = cursor.execute(sql_query)
