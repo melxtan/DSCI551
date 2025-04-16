@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils import generate_query, execute_sql, execute_mongo, get_sql_schema, get_nosql_schema
+from utils import generate_query, execute_sql, execute_mongo, get_sql_schema, get_nosql_schema, generate_example_questions
 
 def main():
     st.title("Natural Language to Database Query")
