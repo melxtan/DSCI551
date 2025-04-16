@@ -32,7 +32,7 @@ def connect_sql():
 
 #连接 MongoDB
 def connect_mongo():
-    client = pymongo.MongoClient("mongodb://18.224.56.248:27017/", serverSelectionTimeoutMS=5000))
+    client = pymongo.MongoClient("mongodb://18.224.56.248:27017/", serverSelectionTimeoutMS=5000)
     return client["management"]
 
 
