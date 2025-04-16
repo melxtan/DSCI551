@@ -303,7 +303,7 @@ def execute_mongo(nosql_query: str):
     Safely execute a MongoDB query string returned from the LLM.
     Converts result to DataFrame like SQL for consistent display.
     """
-    db = connect_to_nosql()  # already gives you `db` object
+    db = connect_mongo()  # already gives you `db` object
 
     try:
         # Clean and extract actual MongoDB query string (if wrapped in code block)
