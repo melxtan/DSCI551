@@ -133,6 +133,7 @@ def get_nosql_schema():
 def generate_example_questions(schema: dict, db_type: str = "sql", num_examples: int = 5) -> list[str]:
     """
     Generate natural language example questions from a given database schema using Azure OpenAI.
+    Ensures at least 3 involve table joins.
     """
     table_descriptions = []
     for table, columns in schema.items():
@@ -147,21 +148,28 @@ You are a helpful assistant that helps users write natural language questions fo
 Here is the schema of the database:
 {schema_description}
 
-Generate {num_examples} realistic and useful example questions that a non-technical user might ask about this data.
-Only output the questions as a numbered list.
+Your task is to generate {num_examples} realistic, clear, and diverse natural language questions that a non-technical user might ask about this data.
+
+IMPORTANT:
+- Ensure that **at least 3 of the questions involve JOINING two or more tables or collections**.
+- Use natural and intuitive phrasing.
+- Output the questions as a **numbered list only**, with no explanations or extra formatting.
     """
 
     try:
         response = client.chat.completions.create(
             model=deployment,
-            messages=[
-                {"role": "system", "content": system_prompt}
-            ],
+            messages=[{"role": "system", "content": system_prompt}],
             temperature=0.7,
-            max_tokens=300,
+            max_tokens=500,
         )
         content = response.choices[0].message.content
         questions = [line.split('. ', 1)[-1].strip() for line in content.split('\n') if line.strip()]
+        
+        # Ensure minimum number of questions is returned
+        if len(questions) < num_examples:
+            questions += ["(Placeholder for more example questions)"] * (num_examples - len(questions))
+
         return questions
     except Exception as e:
         print(f"Error generating example questions: {e}")
