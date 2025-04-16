@@ -81,7 +81,7 @@ def get_postgres_schema():
 
 def get_nosql_schema():
     """Retrieves MongoDB collection structure."""
-    db = connect_to_nosql()
+    db = connect_mongo()
     schema = {}
     
     # Get all collections
