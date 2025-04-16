@@ -20,6 +20,14 @@ client = AzureOpenAI(
     api_version="2024-05-01-preview",
 )
 
+def call_llm_api(messages: list) -> str:
+    """Calls LLM API with the given messages."""
+    response = client.chat.completions.create(
+        model=config["DEPLOYMENT_NAME"],
+        messages=messages
+    )
+    return response.choices[0].message.content
+
 # 连接 SQL 数据库
 def connect_sql():
     return pymysql.connect(
