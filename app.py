@@ -45,7 +45,7 @@ def main():
 
     if st.session_state.generated_query:
         st.write("Generated Query:")
-        st.code(st.session_state.generated_query, language="sql" if db_type == "sql" else "json")
+        st.code(st.session_state.generated_query, language="sql" if db_type == "sql" else "mongodb")
 
         if st.button("Execute Query"):
             try:
