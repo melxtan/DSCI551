@@ -147,56 +147,37 @@ Only output the questions as a numbered list.
         return ["Example question generation failed."]
 # %%
 
-def generate_query(user_query: str, db_type: str) -> tuple:
-    """Uses LLM to generate a database query based on schema."""
-    if db_type == "sql":
-        schema = get_sql_schema()
-        db_type_desc = "MySQL"
-    # elif db_type == "postgres":
-    #     schema = get_postgres_schema()
-    #     db_type_desc = "PostgreSQL"
-    else:  # mongodb
-        schema = get_nosql_schema()
-        db_type_desc = "MongoDB"
+def generate_query(user_query, db_type="sql"):
+    """
+    使用 LLM 解析自然语言，并结合数据库 Schema 生成 SQL/NoSQL 查询
+    """
+    schema = get_sql_schema() if db_type == "sql" else get_nosql_schema()
 
     system_prompt = f"""
-    You are a database query assistant. Based on the provided database schema, convert the following natural language query into a valid query.
-    The target database type is {db_type_desc}.
-    
-    For {db_type_desc} queries:
-    - Use the table names and column names exactly as provided in the schema
-    - Follow {db_type_desc} syntax and conventions
-    - For PostgreSQL, use proper parameterized queries with %s for parameters
-    - For MySQL, use proper MySQL syntax
-    
-    For MongoDB queries:
-    - Use the collection names exactly as provided in the schema
-    - Output a valid MongoDB query in Python syntax
-    - Start with db["collection_name"]
-    
-    Schema:
+    你是一个数据库查询助手，任务是将自然语言转换为数据库查询。
+    当前数据库结构如下：
     {schema}
+    请根据用户的查询生成正确的 {db_type.upper()} 语句。
     """
 
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_query}
+        {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
+        {"role": "user", "content": [{"type": "text", "text": user_query}]}
     ]
 
-    completion = call_llm_api(messages)
-    extracted_query = extract_sql_from_response(completion)
-    print("Generated query:", extracted_query)
-    
-    # Determine query type based on content
-    if db_type in ["mysql", "postgres"]:
-        if extracted_query.upper().startswith(("SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP")):
-            return db_type.upper(), extracted_query
-    else:  # mongodb
-        if ".find(" in extracted_query or ".aggregate(" in extracted_query:
-            return "NOSQL", extracted_query
-    
-    # Default to the specified database type
-    return db_type.upper(), extracted_query
+    completion = client.chat.completions.create(
+        model=deployment,
+        messages=messages,
+        max_tokens=800,
+        temperature=0.7,
+        top_p=0.95,
+        frequency_penalty=0,
+        presence_penalty=0,
+        stop=None,
+        stream=False
+    )
+
+    return completion.choices[0].message.content
 
 
 # %%
