@@ -280,6 +280,24 @@ def execute_postgres(query: str):
 import re
 import ast
 
+def extract_query_from_response(llm_response: str) -> str:
+    """
+    Extracts the query string from code block or plain text.
+    If it's a MongoDB query, extracts only the 'db.collection.find(...)' part.
+    """
+    # Remove code block markers if present
+    match = re.search(r"```(?:[^\n]*)\n([\s\S]+?)```", llm_response)
+    content = match.group(1).strip() if match else llm_response.strip()
+
+    # Find the first line that looks like a MongoDB query
+    for line in content.splitlines():
+        line = line.strip()
+        if line.startswith("db[") or line.startswith("db."):
+            if line.startswith("result = "):
+                line = line[len("result = "):]
+            return line
+    return content  # fallback
+
 def parse_mongo_query_string(query_str: str):
     """
     Parses a MongoDB query like:
