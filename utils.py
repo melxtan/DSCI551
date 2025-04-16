@@ -149,12 +149,12 @@ Only output the questions as a numbered list.
 
 def generate_query(user_query: str, db_type: str) -> tuple:
     """Uses LLM to generate a database query based on schema."""
-    if db_type == "mysql":
+    if db_type == "sql":
         schema = get_sql_schema()
         db_type_desc = "MySQL"
-    elif db_type == "postgres":
-        schema = get_postgres_schema()
-        db_type_desc = "PostgreSQL"
+    # elif db_type == "postgres":
+    #     schema = get_postgres_schema()
+    #     db_type_desc = "PostgreSQL"
     else:  # mongodb
         schema = get_nosql_schema()
         db_type_desc = "MongoDB"
