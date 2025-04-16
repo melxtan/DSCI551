@@ -35,9 +35,9 @@ def main():
                 st.subheader(table)
                 st.markdown(", ".join(f"`{col}`" for col in columns))
 
-    # Optionally show raw JSON
-    with st.expander("Show raw schema (advanced users)"):
-        st.json(schema)
+    # # Optionally show raw JSON
+    # with st.expander("Show raw schema (advanced users)"):
+    #     st.json(schema)
 
     # Get user query
     user_query = st.text_area("Enter your question in natural language")
