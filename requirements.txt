@@ -4,5 +4,5 @@ sqlparse
 pymysql
 cryptography
 pymongo
-psycopg2
+psycopg2-binary
 openai
