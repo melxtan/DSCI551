@@ -102,7 +102,7 @@ Only output the questions as a numbered list.
         return ["Example question generation failed."]
 # %%
 
-def generate_query(user_query, db_type="sql"):
+def generate_query(user_query, db_type):
     """
     使用 LLM 解析自然语言，并结合数据库 Schema 生成 SQL/NoSQL 查询
     """
