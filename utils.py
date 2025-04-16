@@ -6,6 +6,8 @@ import pandas as pd
 import sqlparse
 import pymysql
 import pymongo
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from openai import AzureOpenAI
 
 # 从环境变量中获取配置参数（也可以在 constant.py 中统一管理）
@@ -29,23 +31,41 @@ def call_llm_api(messages: list) -> str:
     return response.choices[0].message.content
 
 # 连接 SQL 数据库
-def connect_sql():
-    return pymysql.connect(
-        host='18.224.56.248',
-        user='root',
-        password='Dsci-551',
-        db='world',
-        charset='utf8mb4'
-    )
+def connect_to_rdbms():
+    """Establishes a connection to an RDBMS."""
+    return pymysql.connect(host="18.224.56.248", user="root", password="Dsci-551", database="dsci551")
 
 #连接 MongoDB
-def connect_mongo():
-    client = pymongo.MongoClient("mongodb://18.224.56.248:27017/", serverSelectionTimeoutMS=5000)
-    return client["world"]
+def connect_to_nosql():
+    """Establishes a connection to a NoSQL database."""
+    try:
+        client = MongoClient("mongodb://18.224.56.248:27017/")
+        # Test the connection
+        client.server_info()
+        db = client["world"]  # Use the existing database
+        
+        # Debug: Print available collections
+        collections = db.list_collection_names()
+        print("Available collections:", collections)
+        
+        return db
+    except Exception as e:
+        print(f"Error connecting to MongoDB: {str(e)}")
+        raise
+
+def connect_to_postgres():
+    """Establishes a connection to PostgreSQL database."""
+    return psycopg2.connect(
+        host="localhost",
+        database="dvdrental",
+        user="postgres",
+        password="postgres",
+        cursor_factory=RealDictCursor
+    )
 
 def get_sql_schema():
     """Retrieves MySQL database schema."""
-    connection = connect_sql()
+    connection = connect_to_rdbms()
     schema = {}
     try:
         with connection.cursor() as cursor:
@@ -62,7 +82,7 @@ def get_sql_schema():
 
 def get_postgres_schema():
     """Retrieves PostgreSQL database schema."""
-    connection = connect_mongo()
+    connection = connect_to_postgres()
     schema = {}
     try:
         with connection.cursor() as cursor:
@@ -89,7 +109,7 @@ def get_postgres_schema():
 
 def get_nosql_schema():
     """Retrieves MongoDB collection structure."""
-    db = connect_mongo()
+    db = connect_to_nosql()
     schema = {}
     
     # Get all collections
@@ -107,7 +127,6 @@ def get_nosql_schema():
             print(f"Schema for {collection}:", fields)
     
     return schema
-
 
 def generate_example_questions(schema: dict, db_type: str = "sql", num_examples: int = 5) -> list[str]:
     """
@@ -145,48 +164,7 @@ Only output the questions as a numbered list.
     except Exception as e:
         print(f"Error generating example questions: {e}")
         return ["Example question generation failed."]
-# %%
 
-def generate_query(user_query, db_type):
-    """
-    使用 LLM 解析自然语言，并结合数据库 Schema 生成 SQL/NoSQL 查询
-    """
-    if db_type == "sql":
-        schema = get_sql_schema()
-        db_type_desc = "MySQL"
-    else:
-        schema = get_nosql_schema()
-        db_type_desc = "MongoDB"
-
-    system_prompt = f"""
-你是一个数据库查询助手，任务是将自然语言转换为数据库查询语句。
-当前数据库类型是 {db_type_desc}，结构如下：
-{schema}
-
-请根据用户的查询生成符合语法的 {db_type_desc} 查询语句。
-    """
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_query}
-    ]
-
-    completion = client.chat.completions.create(
-        model=deployment,
-        messages=messages,
-        max_tokens=800,
-        temperature=0.7,
-        top_p=0.95,
-        frequency_penalty=0,
-        presence_penalty=0,
-        stop=None,
-        stream=False
-    )
-
-    return completion.choices[0].message.content
-
-
-# %%
 
 def extract_sql_from_response(llm_response: str) -> str:
     """
@@ -212,9 +190,59 @@ def extract_sql_from_response(llm_response: str) -> str:
 
     return query
 
-# %%
 
-import sqlparse
+def generate_query(user_query: str, db_type: str) -> tuple:
+    """Uses LLM to generate a database query based on schema."""
+    if db_type == "mysql":
+        schema = get_sql_schema()
+        db_type_desc = "MySQL"
+    elif db_type == "postgres":
+        schema = get_postgres_schema()
+        db_type_desc = "PostgreSQL"
+    else:  # mongodb
+        schema = get_nosql_schema()
+        db_type_desc = "MongoDB"
+
+    system_prompt = f"""
+    You are a database query assistant. Based on the provided database schema, convert the following natural language query into a valid query.
+    The target database type is {db_type_desc}.
+    
+    For {db_type_desc} queries:
+    - Use the table names and column names exactly as provided in the schema
+    - Follow {db_type_desc} syntax and conventions
+    - For PostgreSQL, use proper parameterized queries with %s for parameters
+    - For MySQL, use proper MySQL syntax
+    
+    For MongoDB queries:
+    - Use the collection names exactly as provided in the schema
+    - Output a valid MongoDB query in Python syntax
+    - Start with db["collection_name"]
+    
+    Schema:
+    {schema}
+    """
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_query}
+    ]
+
+    completion = call_llm_api(messages)
+    extracted_query = extract_sql_from_response(completion)
+    print("Generated query:", extracted_query)
+    
+    # Determine query type based on content
+    if db_type in ["mysql", "postgres"]:
+        if extracted_query.upper().startswith(("SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP")):
+            return db_type.upper(), extracted_query
+    else:  # mongodb
+        if ".find(" in extracted_query or ".aggregate(" in extracted_query:
+            return "NOSQL", extracted_query
+    
+    # Default to the specified database type
+    return db_type.upper(), extracted_query
+
+# %%
 
 def validate_sql(sql_query: str) -> bool:
     """Validates the basic structure of an SQL statement."""
@@ -226,35 +254,32 @@ def validate_sql(sql_query: str) -> bool:
 
 
 def execute_sql(sql_query: str):
-    """Execute SQL query and return result in a DataFrame."""
-
-    # Ensure query is cleaned
-    sql_query = extract_sql_from_response(sql_query)
-
+    """Executes an SQL query with validation."""
     if not validate_sql(sql_query):
-        return "SQL query is invalid and cannot be executed."
+        return "SQL statement is invalid and cannot be executed."
 
-    connection = connect_sql()
+    connection = connect_to_rdbms()
     try:
         with connection.cursor() as cursor:
             affected_rows = cursor.execute(sql_query)
             query_lower = sql_query.strip().lower()
             if query_lower.startswith(("select", "show", "describe")):
-                result = cursor.fetchall()
-                if result:
-                    # Fetch column names dynamically
-                    column_names = [desc[0] for desc in cursor.description]
-                    df = pd.DataFrame(result, columns=column_names)
-                    return df
-                else:
-                    return "No results returned."
+                # Get column names
+                columns = [desc[0] for desc in cursor.description]
+                # Fetch results and convert to list of dictionaries
+                results = []
+                for row in cursor.fetchall():
+                    result_dict = {}
+                    for i, value in enumerate(row):
+                        result_dict[columns[i]] = value
+                    results.append(result_dict)
+                return results
             else:
                 connection.commit()
                 return f"{affected_rows} rows affected."
     finally:
         connection.close()
 
-# %%
 
 def execute_postgres(query: str):
     """Executes a PostgreSQL query."""
@@ -277,68 +302,28 @@ def execute_postgres(query: str):
         connection.close()
 
 
-import re
-import ast
-
-def extract_query_from_response(llm_response: str) -> str:
+def execute_nosql(nosql_query: str):
     """
-    Extracts the query string from code block or plain text.
-    If it's a MongoDB query, extracts only the 'db.collection.find(...)' part.
+    执行 MongoDB 查询。
+    参数 nosql_query 预期为一个可以在 MongoDB 上执行的 Python 表达式字符串，
+    例如："db['students'].find({'name': 'Alice'})"。
+
+    注意：这里使用 eval 执行查询，请确保查询内容受信任。
     """
-    # Remove code block markers if present
-    match = re.search(r"```(?:[^\n]*)\n([\s\S]+?)```", llm_response)
-    content = match.group(1).strip() if match else llm_response.strip()
-
-    # Find the first line that looks like a MongoDB query
-    for line in content.splitlines():
-        line = line.strip()
-        if line.startswith("db[") or line.startswith("db."):
-            if line.startswith("result = "):
-                line = line[len("result = "):]
-            return line
-    return content  # fallback
-
-def parse_mongo_query_string(query_str: str):
-    """
-    Parses a MongoDB query like:
-    db.city.find({ "Name": "Paris" }, { "Population": 1 })
-    Returns: collection_name, filter_dict, projection_dict
-    """
-    pattern = r"db\.([a-zA-Z0-9_]+)\.find\((\{.*?\})\s*,\s*(\{.*?\})\)"
-    match = re.search(pattern, query_str, re.DOTALL)
-    if not match:
-        raise ValueError("Invalid MongoDB query format")
-
-    collection_name = match.group(1)
-    filter_dict = ast.literal_eval(match.group(2))
-    projection_dict = ast.literal_eval(match.group(3))
-
-    return collection_name, filter_dict, projection_dict
-
-
-def execute_mongo(nosql_query: str):
-    """
-    Safely execute a MongoDB query string returned from the LLM.
-    Converts result to DataFrame like SQL for consistent display.
-    """
-    db = connect_mongo()  # already gives you `db` object
-
+    print("Executing MongoDB query:", nosql_query)
+    db = connect_to_nosql()  # Already returns the database object
     try:
-        # Clean and extract actual MongoDB query string (if wrapped in code block)
-        nosql_query = extract_query_from_response(nosql_query)  # like extract_sql_from_response
-
-        # Parse query into components
-        collection, filter_dict, projection_dict = parse_mongo_query_string(nosql_query)
-
-        cursor = db[collection].find(filter_dict, projection_dict)
-        result = list(cursor)
-
-        if not result:
-            return "No results returned."
-        return pd.DataFrame(result)
-
+        # 在安全上下文中执行查询，提供 db 变量供表达式使用
+        result = eval(nosql_query, {"db": db})
+        # 如果返回的是 pymongo Cursor，则转换为列表
+        if hasattr(result, "sort") or hasattr(result, "batch_size"):
+            result = list(result)
+        print("MongoDB query result:", result)
+        return result
     except Exception as e:
-        return f"MongoDB 查询错误: {str(e)}"
+        error_msg = f"Error executing MongoDB query: {str(e)}"
+        print(error_msg)
+        return error_msg
 
 
 
