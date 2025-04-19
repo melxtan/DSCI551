@@ -35,7 +35,7 @@ def call_llm_api(messages: list) -> str:
 # 连接 SQL 数据库
 def connect_to_rdbms():
     """Establishes a connection to an RDBMS."""
-    return pymysql.connect(host="3.141.35.164", user="root", password="Dsci-551", database="dsci551")
+    return pymysql.connect(host="3.141.35.164", user="root", password="Dsci-551", database="Movie")
 
 #连接 MongoDB
 def connect_to_nosql():
