@@ -35,13 +35,13 @@ def call_llm_api(messages: list) -> str:
 # 连接 SQL 数据库
 def connect_to_rdbms():
     """Establishes a connection to an RDBMS."""
-    return pymysql.connect(host="18.221.227.82", user="root", password="Dsci-551", database="dsci551")
+    return pymysql.connect(host="3.141.35.164", user="root", password="Dsci-551", database="dsci551")
 
 #连接 MongoDB
 def connect_to_nosql():
     """Establishes a connection to a NoSQL database."""
     try:
-        client = MongoClient("mongodb://18.221.227.82:27017/")
+        client = MongoClient("mongodb://3.141.35.164:27017/")
         # Test the connection
         client.server_info()
         db = client["world"]  # Use the existing database
