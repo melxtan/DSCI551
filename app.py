@@ -16,15 +16,12 @@ def main():
     st.title("Natural Language to SQL/NoSQL Query")
 
     # Select DB type
-    db_choice = st.radio("Select Database Type", ("MySQL", "PostgreSQL", "MongoDB"))
+    db_choice = st.radio("Select Database Type", ("MySQL", "MongoDB"))
 
     # Fetch schema
     if db_choice == "MySQL":
         schema = get_sql_schema()
         db_type_code = "mysql"
-    elif db_choice == "PostgreSQL":
-        schema = get_postgres_schema()
-        db_type_code = "postgres"
     else:
         schema = get_nosql_schema()
         db_type_code = "mongodb"
@@ -64,8 +61,6 @@ def main():
                     else:
                         st.error("Invalid MySQL query. Please try again.")
                         return
-                elif db_choice == "PostgreSQL":
-                    result = execute_postgres(st.session_state.generated_query)
                 else:  # MongoDB
                     result = execute_nosql(st.session_state.generated_query)
                     # Clean MongoDB result
