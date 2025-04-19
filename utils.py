@@ -35,13 +35,13 @@ def call_llm_api(messages: list) -> str:
 # 连接 SQL 数据库
 def connect_to_rdbms():
     """Establishes a connection to an RDBMS."""
-    return pymysql.connect(host="18.224.56.248", user="root", password="Dsci-551", database="dsci551")
+    return pymysql.connect(host="18.221.227.82", user="root", password="Dsci-551", database="dsci551")
 
 #连接 MongoDB
 def connect_to_nosql():
     """Establishes a connection to a NoSQL database."""
     try:
-        client = MongoClient("mongodb://18.224.56.248:27017/")
+        client = MongoClient("mongodb://18.221.227.82:27017/")
         # Test the connection
         client.server_info()
         db = client["world"]  # Use the existing database
@@ -55,15 +55,15 @@ def connect_to_nosql():
         print(f"Error connecting to MongoDB: {str(e)}")
         raise
 
-def connect_to_postgres():
-    """Establishes a connection to PostgreSQL database."""
-    return psycopg2.connect(
-        host="3.129.21.202",
-        database="dvdrental",
-        user="postgres",
-        password="postgres",
-        cursor_factory=RealDictCursor
-    )
+# def connect_to_postgres():
+#     """Establishes a connection to PostgreSQL database."""
+#     return psycopg2.connect(
+#         host="3.129.21.202",
+#         database="dvdrental",
+#         user="postgres",
+#         password="postgres",
+#         cursor_factory=RealDictCursor
+#     )
 
 def get_sql_schema():
     """Retrieves MySQL database schema."""
@@ -82,31 +82,31 @@ def get_sql_schema():
     return schema
 
 
-def get_postgres_schema():
-    """Retrieves PostgreSQL database schema."""
-    connection = connect_to_postgres()
-    schema = {}
-    try:
-        with connection.cursor() as cursor:
-            # Get all tables
-            cursor.execute("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-            """)
-            tables = [row['table_name'] for row in cursor.fetchall()]
+# def get_postgres_schema():
+#     """Retrieves PostgreSQL database schema."""
+#     connection = connect_to_postgres()
+#     schema = {}
+#     try:
+#         with connection.cursor() as cursor:
+#             # Get all tables
+#             cursor.execute("""
+#                 SELECT table_name 
+#                 FROM information_schema.tables 
+#                 WHERE table_schema = 'public'
+#             """)
+#             tables = [row['table_name'] for row in cursor.fetchall()]
 
-            # Get columns for each table
-            for table in tables:
-                cursor.execute("""
-                    SELECT column_name, data_type 
-                    FROM information_schema.columns 
-                    WHERE table_name = %s
-                """, (table,))
-                schema[table] = [row['column_name'] for row in cursor.fetchall()]
-    finally:
-        connection.close()
-    return schema
+#             # Get columns for each table
+#             for table in tables:
+#                 cursor.execute("""
+#                     SELECT column_name, data_type 
+#                     FROM information_schema.columns 
+#                     WHERE table_name = %s
+#                 """, (table,))
+#                 schema[table] = [row['column_name'] for row in cursor.fetchall()]
+#     finally:
+#         connection.close()
+#     return schema
 
 
 def get_nosql_schema():
@@ -242,7 +242,7 @@ def generate_query(user_query: str, db_type: str) -> tuple:
     print("Generated query:", extracted_query)
     
     # Determine query type based on content
-    if db_type in ["mysql", "postgres"]:
+    if db_type == "mysql":
         if extracted_query.upper().startswith(("SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP")):
             return db_type.upper(), extracted_query
     else:  # mongodb
